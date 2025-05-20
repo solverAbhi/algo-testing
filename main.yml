@@ -1,7 +1,17 @@
 ---
 - hosts: localhost
   become: false
+  vars:
+    debug_vars: true  # Enable or disable debugging easily
   tasks:
+    - name: 🐛 DEBUG - Print passed variables
+      debug:
+        msg:
+          - "playbook_dir: {{ playbook_dir | default('undefined') }}"
+          - "ipsec_enabled: {{ ipsec_enabled | default('undefined') }}"
+          - "provider: {{ provider | default('undefined') }}"
+          - "ansible_python_interpreter: {{ ansible_python_interpreter | default('undefined') }}"
+      when: debug_vars
     - name: Playbook dir stat
       stat:
         path: "{{ playbook_dir }}"
@@ -53,8 +63,33 @@
 - name: Include prompts playbook
   import_playbook: input.yml
 
+
+
+- name: Debug after input.yml
+  hosts: localhost
+  tasks:
+    - name: 🐛 Post-input debug
+      debug:
+        msg:
+          - "ipsec_enabled: {{ ipsec_enabled | default('undefined') }}"
+          - "provider: {{ provider | default('undefined') }}"
+
 - name: Include cloud provisioning playbook
   import_playbook: cloud.yml
+- name: after cloud.yml
+  tasks:
+    - name: 🐛 Post-cloud debug
+      debug:
+        msg:
+          - "ipsec_enabled: {{ ipsec_enabled | default('undefined') }}"
+          - "provider: {{ provider | default('undefined') }}"
 
+- name: after server.yml
+  tasks:
+    - name: 🐛 Post-server debug
+      debug:
+        msg:
+          - "ipsec_enabled: {{ ipsec_enabled | default('undefined') }}"
+          - "provider: {{ provider | default('undefined') }}"
 - name: Include server configuration playbook
   import_playbook: server.yml

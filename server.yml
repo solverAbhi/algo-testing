@@ -5,8 +5,18 @@
   become: true
   vars_files:
     - config.cfg
+
   tasks:
+    - name: 🚀 Starting server configuration
+      debug:
+        msg: "Starting configuration for {{ inventory_hostname }}"
+
     - block:
+        - name: ⏳ Waiting for cloud-init to complete
+          debug:
+            msg: "Waiting for cloud-init to finish..."
+          when: cloudinit
+
         - name: Wait until the cloud-init completed
           wait_for:
             path: /var/lib/cloud/data/result.json
@@ -15,6 +25,11 @@
             state: present
           become: false
           when: cloudinit
+
+        - name: 📁 Preparing SSH config directory and file
+          debug:
+            msg: "Preparing SSH config for {{ IP_subject_alt_name }}"
+          when: inventory_hostname != 'localhost'
 
         - block:
             - name: Ensure the config directory exists
@@ -40,30 +55,54 @@
           become: false
           delegate_to: localhost
 
+        - name: 🧱 Importing common role
+          debug:
+            msg: "Running common role"
         - import_role:
             name: common
           tags: common
 
+        - name: 📡 Importing DNS role (if needed)
+          debug:
+            msg: "Running DNS role"
+          when:
+            - algo_dns_adblocking or dns_encryption
         - import_role:
             name: dns
           when:
             - algo_dns_adblocking or dns_encryption
           tags: dns
 
+        - name: ⚙️ Importing WireGuard role
+          debug:
+            msg: "Running WireGuard role"
+          when: wireguard_enabled
         - import_role:
             name: wireguard
           when: wireguard_enabled
           tags: wireguard
 
+        - name: 🔐 Importing StrongSwan (IPSec) role
+          debug:
+            msg: "Running IPSec role"
+          when: ipsec_enabled
         - import_role:
             name: strongswan
           when: ipsec_enabled
           tags: ipsec
 
+        - name: 🔁 Importing SSH tunneling role
+          debug:
+            msg: "Running SSH Tunneling role"
+          when: algo_ssh_tunneling
         - import_role:
             name: ssh_tunneling
           when: algo_ssh_tunneling
           tags: ssh_tunneling
+
+        - name: 📝 Dumping final configuration and creating symlink
+          debug:
+            msg: "Dumping config and creating symlink if needed"
 
         - block:
             - name: Dump the configuration
@@ -112,7 +151,8 @@
                 - pki_in_tmpfs
                 - not algo_store_pki
 
-            - debug:
+            - name: ✅ Configuration complete - printing final info
+              debug:
                 msg:
                   - "{{ congrats.common.split('\n') }}"
                   - "    {{ congrats.p12_pass if algo_ssh_tunneling or ipsec_enabled else '' }}"

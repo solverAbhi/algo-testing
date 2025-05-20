@@ -8,8 +8,21 @@
 
   tasks:
     - block:
+        - name: 🐛 DEBUG - cloudpre.yml
+          debug:
+            msg:
+              - "ipsec_enabled: {{ ipsec_enabled | default('undefined') }}"
+              - "provider: {{ provider | default('undefined') }}"
+
         - name: Local pre-tasks
           import_tasks: playbooks/cloud-pre.yml
+
+
+        - name: 🐛 DEBUG - cloudpost.yml
+          debug:
+            msg:
+              - "ipsec_enabled: {{ ipsec_enabled | default('undefined') }}"
+              - "provider: {{ provider | default('undefined') }}"
 
         - name: Include a provisioning role
           include_role:
@@ -17,5 +30,12 @@
 
         - name: Local post-tasks
           import_tasks: playbooks/cloud-post.yml
+
+        - name: 🐛 DEBUG -after running  cloudpost.yml
+          debug:
+            msg:
+              - "ipsec_enabled: {{ ipsec_enabled | default('undefined') }}"
+              - "provider: {{ provider | default('undefined') }}"
+
       rescue:
         - include_tasks: playbooks/rescue.yml
